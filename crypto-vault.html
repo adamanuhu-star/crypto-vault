@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRYPTO-VAULT | Password Strength Analyzer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200 min-h-screen">
+    <div class="min-h-screen bg-slate-950 text-slate-200 p-6 font-sans">
+        <header class="mb-8 text-center">
+            <h1 class="text-4xl font-bold text-emerald-400 tracking-tight">CRYPTO-VAULT</h1>
+            <p class="text-slate-500 text-sm mt-2">Password Strength Analyzer & Entropy Calculator</p>
+        </header>
+
+        <div class="max-w-2xl mx-auto space-y-6">
+            <!-- Password Input -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
+                <label class="text-xs text-slate-500 uppercase tracking-wider mb-2 block">Enter Password</label>
+                <div class="relative">
+                    <input type="password" id="password-input" placeholder="Type a password to analyze..." 
+                        class="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-lg text-slate-200 focus:border-emerald-500 focus:outline-none font-mono tracking-wider"
+                        oninput="analyzePassword()">
+                    <button onclick="toggleVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-emerald-400 transition-colors text-sm">
+                        👁
+                    </button>
+                </div>
+                <div class="flex gap-2 mt-3">
+                    <button onclick="generatePassword()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1.5 rounded transition-colors">Generate Strong</button>
+                    <button onclick="clearInput()" class="bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs px-3 py-1.5 rounded transition-colors">Clear</button>
+                </div>
+            </div>
+
+            <!-- Strength Meter -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
+                <div class="flex justify-between items-end mb-2">
+                    <span class="text-xs text-slate-500 uppercase tracking-wider">Strength Score</span>
+                    <span id="strength-label" class="text-lg font-bold text-slate-500">Empty</span>
+                </div>
+                <div class="bg-slate-950 rounded-full h-3 overflow-hidden">
+                    <div id="strength-bar" class="h-full rounded-full transition-all duration-700 ease-out" style="width: 0%"></div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mt-4">
+                    <div class="bg-slate-950 rounded-lg p-3 text-center">
+                        <div class="text-xs text-slate-500 mb-1">Entropy</div>
+                        <div id="entropy-value" class="text-2xl font-bold text-slate-400 font-mono">0 <span class="text-sm">bits</span></div>
+                    </div>
+                    <div class="bg-slate-950 rounded-lg p-3 text-center">
+                        <div class="text-xs text-slate-500 mb-1">Crack Time</div>
+                        <div id="crack-time" class="text-2xl font-bold text-slate-400 font-mono">Instant</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Character Analysis -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
+                <h3 class="text-xs text-slate-500 uppercase tracking-wider mb-4">Character Composition</h3>
+                <div class="grid grid-cols-4 gap-3">
+                    <div id="has-lower" class="bg-slate-950 border border-slate-800 rounded-lg p-3 text-center opacity-40 transition-all">
+                        <div class="text-xl mb-1">a-z</div>
+                        <div class="text-xs text-slate-500">Lowercase</div>
+                    </div>
+                    <div id="has-upper" class="bg-slate-950 border border-slate-800 rounded-lg p-3 text-center opacity-40 transition-all">
+                        <div class="text-xl mb-1">A-Z</div>
+                        <div class="text-xs text-slate-500">Uppercase</div>
+                    </div>
+                    <div id="has-number" class="bg-slate-950 border border-slate-800 rounded-lg p-3 text-center opacity-40 transition-all">
+                        <div class="text-xl mb-1">0-9</div>
+                        <div class="text-xs text-slate-500">Numbers</div>
+                    </div>
+                    <div id="has-symbol" class="bg-slate-950 border border-slate-800 rounded-lg p-3 text-center opacity-40 transition-all">
+                        <div class="text-xl mb-1">!@#</div>
+                        <div class="text-xs text-slate-500">Symbols</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Metrics -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
+                <h3 class="text-xs text-slate-500 uppercase tracking-wider mb-4">Security Analysis</h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center py-2 border-b border-slate-800">
+                        <span class="text-sm text-slate-400">Length</span>
+                        <span id="length-val" class="font-mono text-emerald-400">0 characters</span>
+                    </div>
+                    <div class="flex justify-between items-center py-2 border-b border-slate-800">
+                        <span class="text-sm text-slate-400">Character Pool</span>
+                        <span id="pool-val" class="font-mono text-emerald-400">0 unique chars</span>
+                    </div>
+                    <div class="flex justify-between items-center py-2 border-b border-slate-800">
+                        <span class="text-sm text-slate-400">Possible Combinations</span>
+                        <span id="combo-val" class="font-mono text-emerald-400">0</span>
+                    </div>
+                    <div class="flex justify-between items-center py-2">
+                        <span class="text-sm text-slate-400">Guesses per Second</span>
+                        <span class="font-mono text-slate-500">100 billion (offline attack)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feedback -->
+            <div id="feedback-box" class="bg-slate-900 border border-slate-800 rounded-xl p-6 hidden">
+                <h3 class="text-xs text-slate-500 uppercase tracking-wider mb-3">Recommendations</h3>
+                <ul id="feedback-list" class="space-y-2 text-sm"></ul>
+            </div>
+
+            <!-- Common Passwords Warning -->
+            <div id="common-warning" class="bg-red-900/20 border border-red-800 rounded-xl p-4 hidden">
+                <div class="flex items-center gap-2 text-red-400 text-sm font-semibold">
+                    ⚠️ This password appears in known data breaches
+                </div>
+            </div>
+        </div>
+
+        <footer class="text-center mt-12 text-xs text-slate-600 pb-6">
+            Built with JavaScript • No data leaves your browser • Educational tool
+        </footer>
+    </div>
+
+    <script>
+        const commonPasswords = ['password', '123456', '12345678', 'qwerty', 'abc123', 'monkey', 'letmein', 'dragon', '111111', 'baseball', 'iloveyou', 'trustno1', 'sunshine', 'princess', 'admin', 'welcome', 'shadow', 'ashley', 'football', 'jesus', 'michael', 'ninja', 'mustang', 'password1', '123456789', 'adobe123', 'admin123', 'login', 'master', 'photoshop', '1q2w3e4r', 'zaq12wsx', 'password123', 'qwerty123', 'lovely', 'whatever', 'starwars'];
+
+        function analyzePassword() {
+            const pwd = document.getElementById('password-input').value;
+            const len = pwd.length;
+
+            const hasLower = /[a-z]/.test(pwd);
+            const hasUpper = /[A-Z]/.test(pwd);
+            const hasNumber = /[0-9]/.test(pwd);
+            const hasSymbol = /[^a-zA-Z0-9]/.test(pwd);
+
+            updateCharBox('has-lower', hasLower, 'emerald');
+            updateCharBox('has-upper', hasUpper, 'emerald');
+            updateCharBox('has-number', hasNumber, 'emerald');
+            updateCharBox('has-symbol', hasSymbol, 'emerald');
+
+            let poolSize = 0;
+            if (hasLower) poolSize += 26;
+            if (hasUpper) poolSize += 26;
+            if (hasNumber) poolSize += 10;
+            if (hasSymbol) poolSize += 33;
+            if (poolSize === 0) poolSize = 1;
+
+            const entropy = len > 0 ? Math.log2(Math.pow(poolSize, len)) : 0;
+            const combinations = len > 0 ? Math.pow(poolSize, len) : 0;
+
+            const guessesPerSec = 100000000000;
+            const seconds = combinations / guessesPerSec;
+            const crackTime = formatCrackTime(seconds);
+
+            let score = 0;
+            if (len > 0) {
+                score = Math.min(100, (entropy / 128) * 100);
+                if (len < 8) score = Math.min(score, 30);
+                if (!hasLower || !hasUpper || !hasNumber || !hasSymbol) score *= 0.85;
+            }
+
+            document.getElementById('entropy-value').innerHTML = entropy.toFixed(1) + ' <span class="text-sm">bits</span>';
+            document.getElementById('crack-time').textContent = crackTime;
+            document.getElementById('length-val').textContent = len + ' characters';
+            document.getElementById('pool-val').textContent = poolSize + ' unique chars';
+            document.getElementById('combo-val').textContent = formatNumber(combinations);
+
+            const bar = document.getElementById('strength-bar');
+            const label = document.getElementById('strength-label');
+            bar.style.width = score + '%';
+
+            let strengthText = 'Empty';
+            let barColor = 'bg-slate-700';
+            let labelColor = 'text-slate-500';
+
+            if (len === 0) {
+                strengthText = 'Empty';
+            } else if (score < 20) {
+                strengthText = 'Very Weak';
+                barColor = 'bg-red-500';
+                labelColor = 'text-red-400';
+            } else if (score < 40) {
+                strengthText = 'Weak';
+                barColor = 'bg-orange-500';
+                labelColor = 'text-orange-400';
+            } else if (score < 60) {
+                strengthText = 'Fair';
+                barColor = 'bg-yellow-500';
+                labelColor = 'text-yellow-400';
+            } else if (score < 80) {
+                strengthText = 'Strong';
+                barColor = 'bg-emerald-500';
+                labelColor = 'text-emerald-400';
+            } else {
+                strengthText = 'Very Strong';
+                barColor = 'bg-emerald-400';
+                labelColor = 'text-emerald-300';
+            }
+
+            bar.className = 'h-full rounded-full transition-all duration-700 ease-out ' + barColor;
+            label.textContent = strengthText;
+            label.className = 'text-lg font-bold ' + labelColor;
+
+            generateFeedback(len, hasLower, hasUpper, hasNumber, hasSymbol, entropy);
+
+            const commonBox = document.getElementById('common-warning');
+            if (commonPasswords.includes(pwd.toLowerCase())) {
+                commonBox.classList.remove('hidden');
+            } else {
+                commonBox.classList.add('hidden');
+            }
+        }
+
+        function updateCharBox(id, active, color) {
+            const el = document.getElementById(id);
+            if (active) {
+                el.classList.remove('opacity-40');
+                el.classList.add('border-' + color + '-500', 'bg-' + color + '-900/20');
+            } else {
+                el.classList.add('opacity-40');
+                el.classList.remove('border-' + color + '-500', 'bg-' + color + '-900/20');
+            }
+        }
+
+        function formatCrackTime(seconds) {
+            if (seconds < 1) return 'Instant';
+            if (seconds < 60) return Math.round(seconds) + ' seconds';
+            if (seconds < 3600) return Math.round(seconds / 60) + ' minutes';
+            if (seconds < 86400) return Math.round(seconds / 3600) + ' hours';
+            if (seconds < 31536000) return Math.round(seconds / 86400) + ' days';
+            if (seconds < 3153600000) return Math.round(seconds / 31536000) + ' years';
+            return 'Centuries';
+        }
+
+        function formatNumber(num) {
+            if (num === 0) return '0';
+            if (num > 1e15) return num.toExponential(2);
+            return num.toLocaleString();
+        }
+
+        function generateFeedback(len, lower, upper, num, sym, entropy) {
+            const box = document.getElementById('feedback-box');
+            const list = document.getElementById('feedback-list');
+            const feedbacks = [];
+
+            if (len < 12) feedbacks.push('Use at least 12 characters for better security');
+            if (len < 8) feedbacks.push('Minimum 8 characters required');
+            if (!lower) feedbacks.push('Add lowercase letters (a-z)');
+            if (!upper) feedbacks.push('Add uppercase letters (A-Z)');
+            if (!num) feedbacks.push('Add numbers (0-9)');
+            if (!sym) feedbacks.push('Add special characters (!@#$%)');
+            if (entropy > 80 && len >= 12) feedbacks.push('Excellent! This password has strong entropy');
+
+            if (feedbacks.length === 0) {
+                box.classList.add('hidden');
+                return;
+            }
+
+            box.classList.remove('hidden');
+            list.innerHTML = feedbacks.map(f => 
+                `<li class="flex items-center gap-2 text-slate-400"><span class="text-emerald-400">→</span> ${f}</li>`
+            ).join('');
+        }
+
+        function toggleVisibility() {
+            const input = document.getElementById('password-input');
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
+
+        function generatePassword() {
+            const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
+            let pwd = '';
+            for (let i = 0; i < 16; i++) {
+                pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            document.getElementById('password-input').value = pwd;
+            analyzePassword();
+        }
+
+        function clearInput() {
+            document.getElementById('password-input').value = '';
+            analyzePassword();
+        }
+    </script>
+</body>
+</html>
